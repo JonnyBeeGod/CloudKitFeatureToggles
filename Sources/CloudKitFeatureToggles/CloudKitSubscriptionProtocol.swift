@@ -9,8 +9,16 @@
 import Foundation
 import CloudKit
 
+protocol CloudKitDatabaseConformable {
+    func add(_ operation: CKDatabaseOperation)
+    func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, completionHandler: @escaping ([CKRecord]?, Error?) -> Void)
+}
+
+extension CKDatabase: CloudKitDatabaseConformable {}
+
 protocol CloudKitSubscriptionProtocol {
     var subscriptionID: String { get }
+    var database: CloudKitDatabaseConformable { get }
     
     func fetchAll()
     func saveSubscription()
@@ -18,11 +26,11 @@ protocol CloudKitSubscriptionProtocol {
 }
 
 extension CloudKitSubscriptionProtocol {
-    func saveSubscription(subscriptionID: String, recordType: String, database: CKDatabase = CKContainer.default().publicCloudDatabase) {
+    func saveSubscription(subscriptionID: String, recordType: String, defaults: UserDefaults) {
         // Let's keep a local flag handy to avoid saving the subscription more than once.
         // Even if you try saving the subscription multiple times, the server doesn't save it more than once
         // Nevertheless, let's save some network operation and conserve resources
-        let subscriptionSaved = UserDefaults.standard.bool(forKey: subscriptionID)
+        let subscriptionSaved = defaults.bool(forKey: subscriptionID)
         guard !subscriptionSaved else {
             return
         }
@@ -44,14 +52,14 @@ extension CloudKitSubscriptionProtocol {
             guard error == nil else {
                 return
             }
-            UserDefaults.standard.set(true, forKey: subscriptionID)
+            defaults.set(true, forKey: subscriptionID)
         }
         operation.qualityOfService = .utility
         // Add the operation to the corresponding private or public database
         database.add(operation)
     }
     
-    func handleNotification(database: CKDatabase = CKContainer.default().publicCloudDatabase, recordType: String, recordFetchedBlock: @escaping (CKRecord) -> Void) {
+    func handleNotification(recordType: String, recordFetchedBlock: @escaping (CKRecord) -> Void) {
         let queryOperation = CKQueryOperation(query: query(recordType: recordType))
         
         queryOperation.recordFetchedBlock = recordFetchedBlock
@@ -60,7 +68,7 @@ extension CloudKitSubscriptionProtocol {
         database.add(queryOperation)
     }
     
-    func fetchAll(recordType: String, handler: @escaping ([CKRecord]) -> Void, database: CKDatabase = CKContainer.default().publicCloudDatabase) {
+    func fetchAll(recordType: String, handler: @escaping ([CKRecord]) -> Void) {
         database.perform(query(recordType: recordType), inZoneWith: nil) { (ckRecords, error) in
             guard error == nil, let ckRecords = ckRecords else {
                 // don't update last fetched date, simply do nothing and try again next time

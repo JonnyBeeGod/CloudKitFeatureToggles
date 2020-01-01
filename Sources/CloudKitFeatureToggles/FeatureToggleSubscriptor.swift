@@ -9,21 +9,26 @@
 import Foundation
 import CloudKit
 
-class FeatureSwitchSubscriptor: CloudKitSubscriptionProtocol {
+class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
+    private static let defaultsSuiteName = "featureToggleDefaultsSuite"
     private let featureToggleRecordID: String
     private let featureToggleNameFieldID: String
     private let featureToggleIsActiveFieldID: String
     
     private let toggleRepository: FeatureToggleRepository
+    private let defaults: UserDefaults
     
     let subscriptionID = "cloudkit-recordType-FeatureToggle"
+    let database: CloudKitDatabaseConformable
     
-    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive") {
-        self.toggleRepository = toggleRepository
+    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
+        self.toggleRepository = FeatureToggleUserDefaultsRepository(defaults: defaults)
         self.featureToggleRecordID = featureToggleRecordID
         self.featureToggleNameFieldID = featureToggleNameFieldID
         self.featureToggleIsActiveFieldID = featureToggleIsActiveFieldID
+        self.defaults = defaults
+        self.database = cloudKitDatabaseConformable
     }
     
     func fetchAll() {
@@ -33,7 +38,7 @@ class FeatureSwitchSubscriptor: CloudKitSubscriptionProtocol {
     }
     
     func saveSubscription() {
-        saveSubscription(subscriptionID: subscriptionID, recordType: featureToggleRecordID)
+        saveSubscription(subscriptionID: subscriptionID, recordType: featureToggleRecordID, defaults: defaults)
     }
     
     func handleNotification() {

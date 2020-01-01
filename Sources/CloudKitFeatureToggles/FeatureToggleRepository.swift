@@ -34,10 +34,11 @@ struct FeatureToggle: FeatureToggleRepresentable {
 
 public class FeatureToggleUserDefaultsRepository {
     
+    private static let defaultsSuiteName = "featureToggleUserDefaultsRepositorySuite"
     private let defaults: UserDefaults
     
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    public init(defaults: UserDefaults? = nil) {
+        self.defaults = defaults ?? UserDefaults(suiteName: FeatureToggleUserDefaultsRepository.defaultsSuiteName) ?? .standard
     }
 }
 
