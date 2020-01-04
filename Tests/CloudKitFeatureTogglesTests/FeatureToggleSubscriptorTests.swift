@@ -11,6 +11,10 @@ import CloudKit
 
 class FeatureToggleSubscriptorTests: XCTestCase {
     
+    enum TestError: Error {
+        case generic
+    }
+    
     var subject: FeatureToggleSubscriptor!
     var cloudKitDatabase: MockCloudKitDatabaseConformable!
     var repository: MockToggleRepository!
@@ -62,6 +66,21 @@ class FeatureToggleSubscriptorTests: XCTestCase {
         XCTAssertFalse(toggle2.isActive)
     }
     
+    func testFetchAllError() {
+        cloudKitDatabase.error = TestError.generic
+        
+        XCTAssertNil(cloudKitDatabase.recordType)
+        XCTAssertEqual(repository.toggles.count, 0)
+        
+        cloudKitDatabase.recordFetched["isActive"] = 1
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.fetchAll()
+        
+        XCTAssertNil(cloudKitDatabase.recordType)
+        XCTAssertEqual(repository.toggles.count, 0)
+    }
+    
     func testSaveSubscription() {
         XCTAssertNil(cloudKitDatabase.subscriptionsToSave)
         XCTAssertFalse(defaults.bool(forKey: subject.subscriptionID))
@@ -81,6 +100,17 @@ class FeatureToggleSubscriptorTests: XCTestCase {
         XCTAssertEqual(firstSubscription.subscriptionID, subject.subscriptionID)
         XCTAssertTrue(defaults.bool(forKey: subject.subscriptionID))
         XCTAssertEqual(cloudKitDatabase.addCalledCount, 1)
+    }
+    
+    func testSaveSubscriptionError() {
+        cloudKitDatabase.error = TestError.generic
+        
+        XCTAssertNil(cloudKitDatabase.subscriptionsToSave)
+        XCTAssertFalse(defaults.bool(forKey: subject.subscriptionID))
+        
+        subject.saveSubscription()
+        
+        XCTAssertFalse(defaults.bool(forKey: subject.subscriptionID))
     }
     
     func testHandleNotification() {
@@ -156,11 +186,12 @@ class MockCloudKitDatabaseConformable: CloudKitDatabaseConformable {
     var recordType: CKRecord.RecordType?
     
     var recordFetched = CKRecord(recordType: "TestFeatureStatus")
+    var error: Error?
     
     func add(_ operation: CKDatabaseOperation) {
         if let op = operation as? CKModifySubscriptionsOperation {
             subscriptionsToSave = op.subscriptionsToSave
-            op.modifySubscriptionsCompletionBlock?(nil, nil, nil)
+            op.modifySubscriptionsCompletionBlock?(nil, nil, error)
         } else if let op = operation as? CKQueryOperation {
             recordType = op.query?.recordType
             op.recordFetchedBlock?(recordFetched)
@@ -169,6 +200,10 @@ class MockCloudKitDatabaseConformable: CloudKitDatabaseConformable {
     }
     
     func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, completionHandler: @escaping ([CKRecord]?, Error?) -> Void) {
-        completionHandler([recordFetched], nil)
+        if let error = error {
+            completionHandler(nil, error)
+        } else {
+            completionHandler([recordFetched], error)
+        }
     }
 }
