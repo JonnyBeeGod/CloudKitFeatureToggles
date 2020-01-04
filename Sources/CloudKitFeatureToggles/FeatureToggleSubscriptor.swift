@@ -23,7 +23,7 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     let database: CloudKitDatabaseConformable
     
     init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
-        self.toggleRepository = FeatureToggleUserDefaultsRepository(defaults: defaults)
+        self.toggleRepository = toggleRepository
         self.featureToggleRecordID = featureToggleRecordID
         self.featureToggleNameFieldID = featureToggleNameFieldID
         self.featureToggleIsActiveFieldID = featureToggleIsActiveFieldID

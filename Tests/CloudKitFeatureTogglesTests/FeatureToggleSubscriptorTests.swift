@@ -12,14 +12,16 @@ import CloudKit
 class FeatureToggleSubscriptorTests: XCTestCase {
     
     var subject: FeatureToggleSubscriptor!
-    var cloudKitDatabase: CloudKitDatabaseConformable!
+    var cloudKitDatabase: MockCloudKitDatabaseConformable!
+    var repository: MockToggleRepository!
     let defaults = UserDefaults(suiteName: "testSuite") ?? .standard
 
     override func setUp() {
         super.setUp()
         
         cloudKitDatabase = MockCloudKitDatabaseConformable()
-        subject = FeatureToggleSubscriptor(toggleRepository: MockToggleRepository(), defaults: defaults, cloudKitDatabaseConformable: cloudKitDatabase)
+        repository = MockToggleRepository()
+        subject = FeatureToggleSubscriptor(toggleRepository: repository, featureToggleRecordID: "TestFeatureStatus", featureToggleNameFieldID: "toggleName", featureToggleIsActiveFieldID: "isActive",  defaults: defaults, cloudKitDatabaseConformable: cloudKitDatabase)
     }
 
     override func tearDown() {
@@ -29,15 +31,93 @@ class FeatureToggleSubscriptorTests: XCTestCase {
     }
     
     func testFetchAll() {
+        XCTAssertNil(cloudKitDatabase.recordType)
+        XCTAssertEqual(repository.toggles.count, 0)
         
+        cloudKitDatabase.recordFetched["isActive"] = 1
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.fetchAll()
+        
+        XCTAssertEqual(repository.toggles.count, 1)
+        guard let toggle = repository.toggles.first else {
+            XCTFail()
+            return
+        }
+        XCTAssertEqual(toggle.identifier, "Toggle1")
+        XCTAssertTrue(toggle.isActive)
+        
+        cloudKitDatabase.recordFetched["isActive"] = 0
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.fetchAll()
+        
+        XCTAssertEqual(repository.toggles.count, 1)
+        
+        guard let toggle2 = repository.toggles.first else {
+            XCTFail()
+            return
+        }
+        XCTAssertEqual(toggle2.identifier, "Toggle1")
+        XCTAssertFalse(toggle2.isActive)
     }
     
     func testSaveSubscription() {
+        XCTAssertNil(cloudKitDatabase.subscriptionsToSave)
+        XCTAssertFalse(defaults.bool(forKey: subject.subscriptionID))
         
+        subject.saveSubscription()
+        
+        guard let firstSubscription = cloudKitDatabase.subscriptionsToSave?.first else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(firstSubscription.subscriptionID, subject.subscriptionID)
+        XCTAssertTrue(defaults.bool(forKey: subject.subscriptionID))
+        XCTAssertEqual(cloudKitDatabase.addCalledCount, 1)
+        
+        subject.saveSubscription()
+        XCTAssertEqual(firstSubscription.subscriptionID, subject.subscriptionID)
+        XCTAssertTrue(defaults.bool(forKey: subject.subscriptionID))
+        XCTAssertEqual(cloudKitDatabase.addCalledCount, 1)
     }
     
     func testHandleNotification() {
+        XCTAssertNil(cloudKitDatabase.recordType)
+        XCTAssertEqual(cloudKitDatabase.addCalledCount, 0)
+        XCTAssertEqual(repository.toggles.count, 0)
         
+        cloudKitDatabase.recordFetched["isActive"] = 1
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.handleNotification()
+        
+        XCTAssertEqual(cloudKitDatabase.addCalledCount, 1)
+        XCTAssertEqual(cloudKitDatabase.recordType, "TestFeatureStatus")
+        XCTAssertEqual(repository.toggles.count, 1)
+        guard let toggle = repository.toggles.first else {
+            XCTFail()
+            return
+        }
+        XCTAssertEqual(toggle.identifier, "Toggle1")
+        XCTAssertTrue(toggle.isActive)
+        
+        cloudKitDatabase.recordFetched["isActive"] = 0
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.handleNotification()
+        
+        XCTAssertEqual(cloudKitDatabase.addCalledCount, 2)
+        XCTAssertEqual(cloudKitDatabase.recordType, "TestFeatureStatus")
+        XCTAssertEqual(repository.toggles.count, 1)
+        
+        guard let toggle2 = repository.toggles.first else {
+            XCTFail()
+            return
+        }
+        XCTAssertEqual(toggle2.identifier, "Toggle1")
+        XCTAssertFalse(toggle2.isActive)
     }
     
     static var allTests = [
@@ -49,14 +129,19 @@ class FeatureToggleSubscriptorTests: XCTestCase {
 }
 
 class MockToggleRepository: FeatureToggleRepository {
-    var toggles: [String: FeatureToggleRepresentable] = [:]
+    var toggles: [FeatureToggleRepresentable] = []
     
     func save(featureToggle: FeatureToggleRepresentable) {
-        toggles[featureToggle.identifier] = featureToggle
+        toggles.removeAll { (representable) -> Bool in
+            representable.identifier == featureToggle.identifier
+        }
+        toggles.append(featureToggle)
     }
     
     func retrieve(identifiable: FeatureToggleIdentifiable) -> FeatureToggleRepresentable {
-        return toggles[identifiable.identifier] ?? MockToggleRepresentable(identifier: identifiable.identifier, isActive: identifiable.fallbackValue)
+        toggles.first { (representable) -> Bool in
+            representable.identifier == identifiable.identifier
+        } ?? MockToggleRepresentable(identifier: identifiable.identifier, isActive: identifiable.fallbackValue)
     }
 }
 
@@ -66,11 +151,24 @@ struct MockToggleRepresentable: FeatureToggleRepresentable {
 }
 
 class MockCloudKitDatabaseConformable: CloudKitDatabaseConformable {
+    var addCalledCount = 0
+    var subscriptionsToSave: [CKSubscription]?
+    var recordType: CKRecord.RecordType?
+    
+    var recordFetched = CKRecord(recordType: "TestFeatureStatus")
+    
     func add(_ operation: CKDatabaseOperation) {
-        
+        if let op = operation as? CKModifySubscriptionsOperation {
+            subscriptionsToSave = op.subscriptionsToSave
+            op.modifySubscriptionsCompletionBlock?(nil, nil, nil)
+        } else if let op = operation as? CKQueryOperation {
+            recordType = op.query?.recordType
+            op.recordFetchedBlock?(recordFetched)
+        }
+        addCalledCount += 1
     }
     
     func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, completionHandler: @escaping ([CKRecord]?, Error?) -> Void) {
-        completionHandler(nil, nil)
+        completionHandler([recordFetched], nil)
     }
 }
