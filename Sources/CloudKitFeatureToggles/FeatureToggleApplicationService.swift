@@ -27,10 +27,9 @@ public class FeatureToggleApplicationService: FeatureToggleApplicationServicePro
     
     public convenience init(featureToggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository()) {
         self.init(featureToggleSubscriptor: FeatureToggleSubscriptor(toggleRepository: featureToggleRepository), featureToggleRepository: featureToggleRepository)
-        self.featureToggleRepository = featureToggleRepository
     }
     
-    init(featureToggleSubscriptor: CloudKitSubscriptionProtocol = FeatureToggleSubscriptor(), featureToggleRepository: FeatureToggleRepository) {
+    init(featureToggleSubscriptor: CloudKitSubscriptionProtocol, featureToggleRepository: FeatureToggleRepository) {
         self.featureToggleSubscriptor = featureToggleSubscriptor
         self.featureToggleRepository = featureToggleRepository
     }

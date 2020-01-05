@@ -6,20 +6,54 @@
 //
 
 import XCTest
+@testable import CloudKitFeatureToggles
 
 class FeatureToggleApplicationServiceTests: XCTestCase {
+    
+    let defaults = UserDefaults(suiteName: "testSuite") ?? .standard
+    var repository: MockToggleRepository!
+    var subscriptor: CloudKitSubscriptionProtocol!
+    var subject: FeatureToggleApplicationServiceProtocol!
 
     override func setUp() {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
-
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        repository = MockToggleRepository()
+        subscriptor = FeatureToggleSubscriptor(toggleRepository: repository, defaults: defaults, cloudKitDatabaseConformable: MockCloudKitDatabaseConformable())
+        subject = FeatureToggleApplicationService(featureToggleSubscriptor: subscriptor, featureToggleRepository: repository)
     }
     
+    func testRegister() {
+        #if canImport(UIKit)
+        subject.register(application: UIApplication.shared())
+        
+        #endif
+    }
     
+    func testHandle() {
+        
+    }
 
     static var allTests = [
-//        ("testFetchAll", testFetchAll),
+        ("testRegister", testRegister),
+        ("testHandle", testHandle),
     ]
+}
+
+class MockFeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
+    var subscriptionID: String = "Mock"
+    var database: CloudKitDatabaseConformable = MockCloudKitDatabaseConformable()
+    
+    var saveSubscriptionCalled = false
+    var handleCalled = false
+    
+    func handleNotification() {
+        handleCalled = true
+    }
+    
+    func saveSubscription() {
+        saveSubscriptionCalled = true
+    }
+    
+    func fetchAll() {
+        
+    }
 }
