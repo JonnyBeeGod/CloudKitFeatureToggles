@@ -10,26 +10,43 @@ import XCTest
 
 class FeatureToggleApplicationServiceTests: XCTestCase {
     
-    let defaults = UserDefaults(suiteName: "testSuite") ?? .standard
     var repository: MockToggleRepository!
-    var subscriptor: CloudKitSubscriptionProtocol!
+    var subscriptor: MockFeatureToggleSubscriptor!
     var subject: FeatureToggleApplicationServiceProtocol!
 
     override func setUp() {
         repository = MockToggleRepository()
-        subscriptor = FeatureToggleSubscriptor(toggleRepository: repository, defaults: defaults, cloudKitDatabaseConformable: MockCloudKitDatabaseConformable())
+        subscriptor = MockFeatureToggleSubscriptor()
         subject = FeatureToggleApplicationService(featureToggleSubscriptor: subscriptor, featureToggleRepository: repository)
     }
     
     func testRegister() {
         #if canImport(UIKit)
-        subject.register(application: UIApplication.shared())
+        XCTAssertFalse(subscriptor.saveSubscriptionCalled)
+        XCTAssertFalse(subscriptor.handleCalled)
+        XCTAssertFalse(subscriptor.fetchAllCalled)
         
+        subject.register(application: UIApplication.shared)
+        
+        XCTAssertTrue(subscriptor.saveSubscriptionCalled)
+        XCTAssertFalse(subscriptor.handleCalled)
+        XCTAssertTrue(subscriptor.fetchAllCalled)
         #endif
     }
     
     func testHandle() {
+        #if canImport(UIKit)
+        XCTAssertFalse(subscriptor.saveSubscriptionCalled)
+        XCTAssertFalse(subscriptor.handleCalled)
+        XCTAssertFalse(subscriptor.fetchAllCalled)
         
+        subject.handleNotification(subscriptionID: "Mock", completionHandler: { result in
+        
+        })
+        XCTAssertFalse(subscriptor.saveSubscriptionCalled)
+        XCTAssertTrue(subscriptor.handleCalled)
+        XCTAssertFalse(subscriptor.fetchAllCalled)
+        #endif
     }
 
     static var allTests = [
@@ -44,6 +61,7 @@ class MockFeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
     var saveSubscriptionCalled = false
     var handleCalled = false
+    var fetchAllCalled = false
     
     func handleNotification() {
         handleCalled = true
@@ -54,6 +72,6 @@ class MockFeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     }
     
     func fetchAll() {
-        
+        fetchAllCalled = true
     }
 }

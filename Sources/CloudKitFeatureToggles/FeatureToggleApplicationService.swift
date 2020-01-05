@@ -16,13 +16,13 @@ public protocol FeatureToggleApplicationServiceProtocol {
 
     #if canImport(UIKit)
     func register(application: UIApplication)
-    func handleNotification(subscriptionID: String, completionHandler: @escaping (UIBackgroundFetchResult) -> Void)
+    func handleNotification(subscriptionID: String?, completionHandler: @escaping (UIBackgroundFetchResult) -> Void)
     #endif
 }
 
-public class FeatureToggleApplicationService: FeatureToggleApplicationServiceProtocol {
+public class FeatureToggleApplicationService: NSObject, FeatureToggleApplicationServiceProtocol {
     
-    private let featureToggleSubscriptor: CloudKitSubscriptionProtocol
+    private var featureToggleSubscriptor: CloudKitSubscriptionProtocol
     private (set) public var featureToggleRepository: FeatureToggleRepository
     
     public convenience init(featureToggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository()) {
@@ -37,30 +37,36 @@ public class FeatureToggleApplicationService: FeatureToggleApplicationServicePro
     #if canImport(UIKit)
     public func register(application: UIApplication) {
         application.registerForRemoteNotifications()
-        featureToggleSubscriptor.saveSubscriptions()
-        featureToggleSubscriptor.fetchAllProviders()
+        featureToggleSubscriptor.saveSubscription()
+        featureToggleSubscriptor.fetchAll()
     }
     
-    public func handleNotification(subscriptionID: String, completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        featureToggleSubscriptor.handleNotification(subscriptionID: notification.subscriptionID, completionHandler: completionHandler)
+    public func handleNotification(subscriptionID: String?, completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        if let subscriptionID = subscriptionID, featureToggleSubscriptor.subscriptionID == subscriptionID {
+            featureToggleSubscriptor.handleNotification()
+            completionHandler(.newData)
+        }
+        else {
+            completionHandler(.noData)
+        }
     }
     #endif
 }
 
 #if canImport(UIKit)
 extension FeatureToggleApplicationService: UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+    public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         register(application: application)
         
         return true
     }
     
-    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        guard let notification = CKNotification(fromRemoteNotificationDictionary: userInfo) else {
+    public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        guard let notification = CKNotification(fromRemoteNotificationDictionary: userInfo), let subscriptionID = notification.subscriptionID else {
             return
         }
         
-        handleNotification(subscriptionID: notification.subscriptionID, completionHandler: completionHandler)
+        handleNotification(subscriptionID: subscriptionID, completionHandler: completionHandler)
     }
 }
 #endif
