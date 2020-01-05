@@ -17,12 +17,9 @@ public protocol FeatureToggleIdentifiable {
     var fallbackValue: Bool { get }
 }
 
-public protocol FeatureToggleRetrievable {
+public protocol FeatureToggleRepository {
     /// retrieves a stored `FeatureToggleRepresentable` from the underlying store.
     func retrieve(identifiable: FeatureToggleIdentifiable) -> FeatureToggleRepresentable
-}
-
-protocol FeatureToggleRepository: FeatureToggleRetrievable {
     /// saves a supplied `FeatureToggleRepresentable` to the underlying store
     func save(featureToggle: FeatureToggleRepresentable)
 }
@@ -49,7 +46,7 @@ extension FeatureToggleUserDefaultsRepository: FeatureToggleRepository {
         return FeatureToggle(identifier: identifiable.identifier, isActive: isActive ?? identifiable.fallbackValue)
     }
     
-    func save(featureToggle: FeatureToggleRepresentable) {
+    public func save(featureToggle: FeatureToggleRepresentable) {
         defaults.set(featureToggle.isActive, forKey: featureToggle.identifier)
     }
 }
