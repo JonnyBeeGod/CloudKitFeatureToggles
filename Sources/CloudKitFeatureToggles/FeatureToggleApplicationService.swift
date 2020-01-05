@@ -13,6 +13,11 @@ import UIKit
 
 public protocol FeatureToggleApplicationServiceProtocol {
     var featureToggleRepository: FeatureToggleRepository { get }
+
+    #if canImport(UIKit)
+    func register(application: UIApplication)
+    func handleNotification(subscriptionID: String, completionHandler: @escaping (UIBackgroundFetchResult) -> Void)
+    #endif
 }
 
 public class FeatureToggleApplicationService: FeatureToggleApplicationServiceProtocol {
@@ -29,14 +34,24 @@ public class FeatureToggleApplicationService: FeatureToggleApplicationServicePro
         self.featureToggleSubscriptor = featureToggleSubscriptor
         self.featureToggleRepository = featureToggleRepository
     }
+    
+    #if canImport(UIKit)
+    public func register(application: UIApplication) {
+        application.registerForRemoteNotifications()
+        featureToggleSubscriptor.saveSubscriptions()
+        featureToggleSubscriptor.fetchAllProviders()
+    }
+    
+    public func handleNotification(subscriptionID: String, completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        featureToggleSubscriptor.handleNotification(subscriptionID: notification.subscriptionID, completionHandler: completionHandler)
+    }
+    #endif
 }
 
 #if canImport(UIKit)
 extension FeatureToggleApplicationService: UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        application.registerForRemoteNotifications()
-        featureToggleSubscriptor.saveSubscriptions()
-        featureToggleSubscriptor.fetchAllProviders()
+        register(application: application)
         
         return true
     }
@@ -46,7 +61,7 @@ extension FeatureToggleApplicationService: UIApplicationDelegate {
             return
         }
         
-        featureToggleSubscriptor.handleNotification(subscriptionID: notification.subscriptionID, completionHandler: completionHandler)
+        handleNotification(subscriptionID: notification.subscriptionID, completionHandler: completionHandler)
     }
 }
 #endif
