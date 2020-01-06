@@ -53,8 +53,29 @@ func application(_ application: UIApplication, didReceiveRemoteNotification user
 ```
 2. Anywhere in your code you can create an instance of `FeatureToggleUserDefaultsRepository` and call `retrieve` to fetch the current status of a feature toggle.
 
-... Note that `retrieve` returns the locally saved status of your toggle, this command does not trigger a fetch from CloudKit. Feature Toggles are fetched from CloudKit once at app start from within the `FeatureToggleApplicationService` `UIApplicationDelegate` hook. Additionally you can subscribe to updates whenever there was a change to the feature toggles in CloudKit as shown in the next section. 
+> :warning: Note that `retrieve` returns the locally saved status of your toggle, this command does not trigger a fetch from CloudKit. Feature Toggles are fetched from CloudKit once at app start from within the `FeatureToggleApplicationService` `UIApplicationDelegate` hook. Additionally you can subscribe to updates whenever there was a change to the feature toggles in CloudKit as shown in the next section. 
 
+3. You have to call `retrieve` with your implementation of a `FeatureToggleIdentifiable`. What I think works well is creating an enum which implements `FeatureToggleIdentifiable`:
+
+```
+enum FeatureToggle: String, FeatureToggleIdentifiable {
+        case feature1
+        case feature2
+        
+        var identifier: String {
+            return self.rawValue
+        }
+        
+        var fallbackValue: Bool {
+            switch self {
+            case .feature1:
+                return false
+            case .feature2:
+                return true
+            }
+        }
+    }
+``` 
 ### Notifications
 
 You can subscribe to updates from your feature toggles in CloudKit by subscribing to the `onRecordsUpdated` Notification like so:
