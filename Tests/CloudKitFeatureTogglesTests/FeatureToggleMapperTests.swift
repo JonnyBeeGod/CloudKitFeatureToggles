@@ -14,7 +14,7 @@ class FeatureToggleMapperTests: XCTestCase {
     var subject: FeatureToggleMappable!
 
     override func setUp() {
-        subject = FeatureToggleMapper()
+        subject = FeatureToggleMapper(featureToggleNameFieldID: "featureName", featureToggleIsActiveFieldID: "isActive")
     }
     
     func testMapInvalidInput() {

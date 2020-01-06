@@ -13,8 +13,6 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
     private static let defaultsSuiteName = "featureToggleDefaultsSuite"
     private let featureToggleRecordID: String
-    private let featureToggleNameFieldID: String
-    private let featureToggleIsActiveFieldID: String
     
     private let toggleRepository: FeatureToggleRepository
     private let toggleMapper: FeatureToggleMappable
@@ -24,12 +22,10 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     let subscriptionID = "cloudkit-recordType-FeatureToggle"
     let database: CloudKitDatabaseConformable
     
-    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), toggleMapper: FeatureToggleMappable = FeatureToggleMapper(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, notificationCenter: NotificationCenter = .default, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
+    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), toggleMapper: FeatureToggleMappable? = nil, featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, notificationCenter: NotificationCenter = .default, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
         self.toggleRepository = toggleRepository
-        self.toggleMapper = toggleMapper
+        self.toggleMapper = toggleMapper ?? FeatureToggleMapper(featureToggleNameFieldID: featureToggleNameFieldID, featureToggleIsActiveFieldID: featureToggleIsActiveFieldID)
         self.featureToggleRecordID = featureToggleRecordID
-        self.featureToggleNameFieldID = featureToggleNameFieldID
-        self.featureToggleIsActiveFieldID = featureToggleIsActiveFieldID
         self.defaults = defaults
         self.notificationCenter = notificationCenter
         self.database = cloudKitDatabaseConformable
@@ -55,8 +51,12 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
     private func updateRepository(with ckRecords: [CKRecord]) {
         ckRecords.forEach { (record) in
-            if let active = record[featureToggleIsActiveFieldID] as? Int64, let featureName = record[featureToggleNameFieldID] as? String {
-                toggleRepository.save(featureToggle: FeatureToggle(identifier: featureName, isActive: NSNumber(value: active).boolValue))
+            let toggles = ckRecords.compactMap { (record) -> FeatureToggle? in
+                return toggleMapper.map(record: record)
+            }
+            
+            toggles.forEach { (toggle) in
+                toggleRepository.save(featureToggle: toggle)
             }
         }
     }

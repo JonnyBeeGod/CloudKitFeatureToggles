@@ -28,7 +28,19 @@ protocol FeatureToggleMappable {
 }
 
 class FeatureToggleMapper: FeatureToggleMappable {
+    private let featureToggleNameFieldID: String
+    private let featureToggleIsActiveFieldID: String
+    
+    init(featureToggleNameFieldID: String, featureToggleIsActiveFieldID: String) {
+        self.featureToggleNameFieldID = featureToggleNameFieldID
+        self.featureToggleIsActiveFieldID = featureToggleIsActiveFieldID
+    }
+    
     func map(record: CKRecord) -> FeatureToggle? {
-        return nil
+        guard let isActive = record[featureToggleIsActiveFieldID] as? Int64, let featureName = record[featureToggleNameFieldID] as? String else {
+            return nil
+        }
+        
+        return FeatureToggle(identifier: featureName, isActive: NSNumber(value: isActive).boolValue)
     }
 }
