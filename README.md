@@ -12,6 +12,7 @@
 </a>
 
 ## What does it do?
+Feature Toggles offer a way to enable or disable certain features that are present in your codebase, switch environments or configurations or toggle between multiple implementations of a protocol - even in your live system at runtime. *CloudKit FeatureToggles* are implemented using `CloudKit` and are therefor associated with no run costs for the developer. Existing Feature Toggles can be changed in the [CloudKit Dashboard](https://icloud.developer.apple.com/dashboard/) and are delivered immediately via silent push notifications to your users.
 
 ## How to install?
 CloudKitFeatureToggles is compatible with Swift Package Manager. To install, simply add this repository URL to your swift packages as package dependency in Xcode. 
