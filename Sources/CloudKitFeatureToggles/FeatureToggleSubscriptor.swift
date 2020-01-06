@@ -17,14 +17,16 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     private let featureToggleIsActiveFieldID: String
     
     private let toggleRepository: FeatureToggleRepository
+    private let toggleMapper: FeatureToggleMappable
     private let defaults: UserDefaults
     private let notificationCenter: NotificationCenter
     
     let subscriptionID = "cloudkit-recordType-FeatureToggle"
     let database: CloudKitDatabaseConformable
     
-    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, notificationCenter: NotificationCenter = .default, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
+    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), toggleMapper: FeatureToggleMappable = FeatureToggleMapper(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, notificationCenter: NotificationCenter = .default, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
         self.toggleRepository = toggleRepository
+        self.toggleMapper = toggleMapper
         self.featureToggleRecordID = featureToggleRecordID
         self.featureToggleNameFieldID = featureToggleNameFieldID
         self.featureToggleIsActiveFieldID = featureToggleIsActiveFieldID
@@ -60,6 +62,8 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     }
     
     private func sendNotification(records: [CKRecord]) {
-        notificationCenter.post(name: Notification.Name.onRecordsUpdated, object: nil, userInfo: ["records" : records])
+        notificationCenter.post(name: Notification.Name.onRecordsUpdated, object: nil, userInfo: ["records" : records.compactMap({ (record) -> FeatureToggle? in
+            return toggleMapper.map(record: record)
+        })])
     }
 }

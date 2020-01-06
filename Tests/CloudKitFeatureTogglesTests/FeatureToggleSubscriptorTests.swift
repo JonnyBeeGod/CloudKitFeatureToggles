@@ -172,9 +172,11 @@ class FeatureToggleSubscriptorTests: XCTestCase {
     static var allTests = [
         ("testFetchAll", testFetchAll),
         ("testFetchAllError", testFetchAllError),
+        ("testFetchAllNotification", testFetchAllNotification),
         ("testSaveSubscription", testSaveSubscription),
         ("testSaveSubscriptionError", testSaveSubscriptionError),
         ("testHandleNotification", testHandleNotification),
+        ("testHandleNotificationSendNotification", testHandleNotificationSendNotification),
     ]
 
 }

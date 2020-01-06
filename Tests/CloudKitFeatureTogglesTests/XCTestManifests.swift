@@ -6,6 +6,7 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(FeatureToggleRepositoryTests.allTests),
         testCase(FeatureToggleSubscriptorTests.allTests),
         testCase(FeatureToggleApplicationServiceTests.allTests),
+        testCase(FeatureToggleMapperTests.allTests),
     ]
 }
 #endif

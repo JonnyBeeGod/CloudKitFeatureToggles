@@ -7,26 +7,11 @@
 
 import Foundation
 
-public protocol FeatureToggleRepresentable {
-    var identifier: String { get }
-    var isActive: Bool { get }
-}
-
-public protocol FeatureToggleIdentifiable {
-    var identifier: String { get }
-    var fallbackValue: Bool { get }
-}
-
 public protocol FeatureToggleRepository {
     /// retrieves a stored `FeatureToggleRepresentable` from the underlying store.
     func retrieve(identifiable: FeatureToggleIdentifiable) -> FeatureToggleRepresentable
     /// saves a supplied `FeatureToggleRepresentable` to the underlying store
     func save(featureToggle: FeatureToggleRepresentable)
-}
-
-struct FeatureToggle: FeatureToggleRepresentable {
-    let identifier: String
-    let isActive: Bool
 }
 
 public class FeatureToggleUserDefaultsRepository {
