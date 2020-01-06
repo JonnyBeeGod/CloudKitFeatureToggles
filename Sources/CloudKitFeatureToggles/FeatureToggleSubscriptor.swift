@@ -33,8 +33,12 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
     func fetchAll() {
         fetchAll(recordType: featureToggleRecordID, handler: { (ckRecords) in
-            self.updateRepository(with: ckRecords)
-            self.sendNotification(records: ckRecords)
+            let toggles = ckRecords.compactMap { (record) -> FeatureToggle? in
+                return self.toggleMapper.map(record: record)
+            }
+            
+            self.updateRepository(with: toggles)
+            self.sendNotification(with: toggles)
         })
     }
     
@@ -44,26 +48,22 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
     func handleNotification() {
         handleNotification(recordType: featureToggleRecordID) { (record) in
-            self.updateRepository(with: [record])
-            self.sendNotification(records: [record])
-        }
-    }
-    
-    private func updateRepository(with ckRecords: [CKRecord]) {
-        ckRecords.forEach { (record) in
-            let toggles = ckRecords.compactMap { (record) -> FeatureToggle? in
-                return toggleMapper.map(record: record)
+            guard let toggle = self.toggleMapper.map(record: record) else {
+                return
             }
             
-            toggles.forEach { (toggle) in
-                toggleRepository.save(featureToggle: toggle)
-            }
+            self.updateRepository(with: [toggle])
+            self.sendNotification(with: [toggle])
         }
     }
     
-    private func sendNotification(records: [CKRecord]) {
-        notificationCenter.post(name: Notification.Name.onRecordsUpdated, object: nil, userInfo: ["records" : records.compactMap({ (record) -> FeatureToggle? in
-            return toggleMapper.map(record: record)
-        })])
+    private func updateRepository(with toggles: [FeatureToggle]) {
+        toggles.forEach { (toggle) in
+            toggleRepository.save(featureToggle: toggle)
+        }
+    }
+    
+    private func sendNotification(with toggles: [FeatureToggle]) {
+        notificationCenter.post(name: Notification.Name.onRecordsUpdated, object: nil, userInfo: ["records" : toggles])
     }
 }
