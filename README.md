@@ -1,7 +1,7 @@
 # CloudKit FeatureToggles
 
 ![](https://github.com/JonnyBeeGod/CloudKitFeatureToggles/workflows/Swift/badge.svg)
-[![codecov](https://codecov.io/gh/JonnyBeeGod/CloudKitFeatureToggles/branch/master/graph/badge.svg?token=y21zGNAsLL)](https://codecov.io/gh/JonnyBeeGod/CloudKitFeatureToggles)
+[![codecov](https://codecov.io/gh/JonnyBeeGod/CloudKitFeatureToggles/branch/master/graph/badge.svg?token=SVdBIFs2Lb)](https://codecov.io/gh/JonnyBeeGod/CloudKitFeatureToggles)
 <img src="https://img.shields.io/badge/Swift-5.1-orange.svg" />
 <a href="https://swift.org/package-manager">
     <img src="https://img.shields.io/badge/swiftpm-compatible-brightgreen.svg?style=flat" alt="Swift Package Manager" />
