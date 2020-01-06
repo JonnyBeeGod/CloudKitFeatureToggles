@@ -62,6 +62,6 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     }
     
     private func sendNotification(with toggles: [FeatureToggle]) {
-        notificationCenter.post(name: Notification.Name.onRecordsUpdated, object: nil, userInfo: ["records" : toggles])
+        notificationCenter.post(name: Notification.Name.onRecordsUpdated, object: nil, userInfo: [Notification.featureTogglesUserInfoKey : toggles])
     }
 }

@@ -83,7 +83,7 @@ class FeatureToggleSubscriptorTests: XCTestCase {
     
     func testFetchAllNotification() {
         let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
-            guard let userInfo = notification.userInfo, let toggles = userInfo["records"] as? [FeatureToggle] else {
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
                 return false
             }
             
@@ -98,7 +98,7 @@ class FeatureToggleSubscriptorTests: XCTestCase {
     
     func testFetchAllNotMappableRecord() {
         let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
-            guard let userInfo = notification.userInfo, let toggles = userInfo["records"] as? [FeatureToggle] else {
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
                 return false
             }
            
@@ -183,7 +183,7 @@ class FeatureToggleSubscriptorTests: XCTestCase {
     
     func testHandleNotificationSendNotification() {
         let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
-            guard let userInfo = notification.userInfo, let toggles = userInfo["records"] as? [FeatureToggle] else {
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
                 return false
             }
            
@@ -199,7 +199,7 @@ class FeatureToggleSubscriptorTests: XCTestCase {
     
     func testHandleNotificationNotMappableRecord() {
         let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
-            guard let userInfo = notification.userInfo, let toggles = userInfo["records"] as? [FeatureToggle] else {
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
                 return false
             }
            
