@@ -48,12 +48,10 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
     func handleNotification() {
         handleNotification(recordType: featureToggleRecordID) { (record) in
-            guard let toggle = self.toggleMapper.map(record: record) else {
-                return
-            }
+            let toggle = self.toggleMapper.map(record: record)
             
-            self.updateRepository(with: [toggle])
-            self.sendNotification(with: [toggle])
+            self.updateRepository(with: [toggle].compactMap { $0 })
+            self.sendNotification(with: [toggle].compactMap { $0 })
         }
     }
     
