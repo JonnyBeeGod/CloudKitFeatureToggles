@@ -18,22 +18,25 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     
     private let toggleRepository: FeatureToggleRepository
     private let defaults: UserDefaults
+    private let notificationCenter: NotificationCenter
     
     let subscriptionID = "cloudkit-recordType-FeatureToggle"
     let database: CloudKitDatabaseConformable
     
-    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
+    init(toggleRepository: FeatureToggleRepository = FeatureToggleUserDefaultsRepository(), featureToggleRecordID: String = "FeatureStatus", featureToggleNameFieldID: String = "featureName", featureToggleIsActiveFieldID: String = "isActive", defaults: UserDefaults = UserDefaults(suiteName: FeatureToggleSubscriptor.defaultsSuiteName) ?? .standard, notificationCenter: NotificationCenter = .default, cloudKitDatabaseConformable: CloudKitDatabaseConformable = CKContainer.default().publicCloudDatabase) {
         self.toggleRepository = toggleRepository
         self.featureToggleRecordID = featureToggleRecordID
         self.featureToggleNameFieldID = featureToggleNameFieldID
         self.featureToggleIsActiveFieldID = featureToggleIsActiveFieldID
         self.defaults = defaults
+        self.notificationCenter = notificationCenter
         self.database = cloudKitDatabaseConformable
     }
     
     func fetchAll() {
         fetchAll(recordType: featureToggleRecordID, handler: { (ckRecords) in
             self.updateRepository(with: ckRecords)
+            self.sendNotification(records: ckRecords)
         })
     }
     
@@ -44,6 +47,7 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
     func handleNotification() {
         handleNotification(recordType: featureToggleRecordID) { (record) in
             self.updateRepository(with: [record])
+            self.sendNotification(records: [record])
         }
     }
     
@@ -53,5 +57,9 @@ class FeatureToggleSubscriptor: CloudKitSubscriptionProtocol {
                 toggleRepository.save(featureToggle: FeatureToggle(identifier: featureName, isActive: NSNumber(value: active).boolValue))
             }
         }
+    }
+    
+    private func sendNotification(records: [CKRecord]) {
+        notificationCenter.post(name: Notification.Name.onRecordsUpdated, object: nil, userInfo: ["records" : records])
     }
 }
