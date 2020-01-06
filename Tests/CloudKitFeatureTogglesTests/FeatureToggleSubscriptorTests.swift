@@ -81,6 +81,15 @@ class FeatureToggleSubscriptorTests: XCTestCase {
         XCTAssertEqual(repository.toggles.count, 0)
     }
     
+    func testFetchAllNotification() {
+        let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil, handler: nil)
+        cloudKitDatabase.recordFetched["isActive"] = 1
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.fetchAll()
+        wait(for: [expectation], timeout: 0.1)
+    }
+    
     func testSaveSubscription() {
         XCTAssertNil(cloudKitDatabase.subscriptionsToSave)
         XCTAssertFalse(defaults.bool(forKey: subject.subscriptionID))
@@ -148,6 +157,16 @@ class FeatureToggleSubscriptorTests: XCTestCase {
         }
         XCTAssertEqual(toggle2.identifier, "Toggle1")
         XCTAssertFalse(toggle2.isActive)
+    }
+    
+    func testHandleNotificationSendNotification() {
+        let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil, handler: nil)
+        cloudKitDatabase.recordFetched["isActive"] = 1
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.handleNotification()
+        wait(for: [expectation], timeout: 0.1)
+        
     }
     
     static var allTests = [
