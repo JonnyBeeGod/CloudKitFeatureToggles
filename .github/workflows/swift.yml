@@ -1,0 +1,19 @@
+name: Swift
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: swift build -v
+    - name: Prepare xcodeproj
+      run: swift package generate-xcodeproj
+    - name: Run tests
+      run: xcodebuild test -scheme CloudKitFeatureToggles-Package -destination platform="macOS" -enableCodeCoverage YES -derivedDataPath .build/derivedData
+    - name: Codecov
+      run: bash <(curl -s https://codecov.io/bash) -D .build/derivedData/ -t ${{ secrets.CODECOV_TOKEN }} -J '^CloudKitFeatureToggles$'
