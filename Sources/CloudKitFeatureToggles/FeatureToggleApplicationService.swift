@@ -16,7 +16,7 @@ public protocol FeatureToggleApplicationServiceProtocol {
 
     #if canImport(UIKit)
     func register(application: UIApplication)
-    func handleNotification(subscriptionID: String?, completionHandler: @escaping (UIBackgroundFetchResult) -> Void)
+    func handleRemoteNotification(subscriptionID: String?, completionHandler: @escaping (UIBackgroundFetchResult) -> Void)
     #endif
 }
 
@@ -41,7 +41,7 @@ public class FeatureToggleApplicationService: NSObject, FeatureToggleApplication
         featureToggleSubscriptor.fetchAll()
     }
     
-    public func handleNotification(subscriptionID: String?, completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    public func handleRemoteNotification(subscriptionID: String?, completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         if let subscriptionID = subscriptionID, featureToggleSubscriptor.subscriptionID == subscriptionID {
             featureToggleSubscriptor.handleNotification()
             completionHandler(.newData)
@@ -66,7 +66,7 @@ extension FeatureToggleApplicationService: UIApplicationDelegate {
             return
         }
         
-        handleNotification(subscriptionID: subscriptionID, completionHandler: completionHandler)
+        handleRemoteNotification(subscriptionID: subscriptionID, completionHandler: completionHandler)
     }
 }
 #endif

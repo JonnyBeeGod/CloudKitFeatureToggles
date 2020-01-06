@@ -81,6 +81,37 @@ class FeatureToggleSubscriptorTests: XCTestCase {
         XCTAssertEqual(repository.toggles.count, 0)
     }
     
+    func testFetchAllNotification() {
+        let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
+                return false
+            }
+            
+            return toggles.count == 1
+        }
+        cloudKitDatabase.recordFetched["isActive"] = 1
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.fetchAll()
+        wait(for: [expectation], timeout: 0.1)
+    }
+    
+    func testFetchAllNotMappableRecord() {
+        let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
+                return false
+            }
+           
+            return toggles.count == 0
+        }
+        cloudKitDatabase.recordFetched["isActive123"] = 1
+        cloudKitDatabase.recordFetched["toggleName1234"] = "Toggle1"
+        
+        subject.fetchAll()
+        wait(for: [expectation], timeout: 0.1)
+        XCTAssertEqual(repository.toggles.count, 0)
+    }
+    
     func testSaveSubscription() {
         XCTAssertNil(cloudKitDatabase.subscriptionsToSave)
         XCTAssertFalse(defaults.bool(forKey: subject.subscriptionID))
@@ -150,12 +181,47 @@ class FeatureToggleSubscriptorTests: XCTestCase {
         XCTAssertFalse(toggle2.isActive)
     }
     
+    func testHandleNotificationSendNotification() {
+        let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
+                return false
+            }
+           
+            return toggles.count == 1
+        }
+        cloudKitDatabase.recordFetched["isActive"] = 1
+        cloudKitDatabase.recordFetched["toggleName"] = "Toggle1"
+        
+        subject.handleNotification()
+        wait(for: [expectation], timeout: 0.1)
+        
+    }
+    
+    func testHandleNotificationNotMappableRecord() {
+        let expectation = self.expectation(forNotification: NSNotification.Name.onRecordsUpdated, object: nil) { (notification) -> Bool in
+            guard let userInfo = notification.userInfo, let toggles = userInfo["featureToggles"] as? [FeatureToggle] else {
+                return false
+            }
+           
+            return toggles.count == 0
+        }
+        
+        cloudKitDatabase.recordFetched["isActive123"] = 1
+        cloudKitDatabase.recordFetched["toggleName1234"] = "Toggle1"
+        
+        subject.handleNotification()
+        wait(for: [expectation], timeout: 0.1)
+        XCTAssertEqual(repository.toggles.count, 0)
+    }
+    
     static var allTests = [
         ("testFetchAll", testFetchAll),
         ("testFetchAllError", testFetchAllError),
+        ("testFetchAllNotification", testFetchAllNotification),
         ("testSaveSubscription", testSaveSubscription),
         ("testSaveSubscriptionError", testSaveSubscriptionError),
         ("testHandleNotification", testHandleNotification),
+        ("testHandleNotificationSendNotification", testHandleNotificationSendNotification),
     ]
 
 }

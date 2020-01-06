@@ -40,7 +40,7 @@ class FeatureToggleApplicationServiceTests: XCTestCase {
         XCTAssertFalse(subscriptor.handleCalled)
         XCTAssertFalse(subscriptor.fetchAllCalled)
         
-        subject.handleNotification(subscriptionID: "Mock", completionHandler: { result in
+        subject.handleRemoteNotification(subscriptionID: "Mock", completionHandler: { result in
         
         })
         XCTAssertFalse(subscriptor.saveSubscriptionCalled)
