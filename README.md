@@ -26,6 +26,19 @@ dependencies: [
 And don't forget to add the dependency to your target(s). 
 
 ## How to use?
+
+### CloudKit Preparations
+1. If your application does not support CloudKit yet start with adding the `CloudKit` and `remote background notification` entitlements to your application
+2. Add a new custom record type 'FeatureStatus' with two fields:
+
+| Field | Type |
+| --- | --- |
+| `featureName` | `String` |
+| `isActive` | `Int64` |
+
+For each feature toggle you want to support in your application later add a new record in your CloudKit *public database*. 
+
+### In your project
 1. In your AppDelegate, initialize a `FeatureToggleApplicationService` and hook its two `UIApplicationDelegate` methods into the AppDelegate lifecycle like so: 
 
 ```
@@ -38,5 +51,27 @@ func application(_ application: UIApplication, didReceiveRemoteNotification user
 }
 
 ```
-2. Anywhere in your code you can create an instance of `FeatureToggleUserDefaultsRepository` and call `retrieve` to fetch the latest status for your feature toggle. 
+2. Anywhere in your code you can create an instance of `FeatureToggleUserDefaultsRepository` and call `retrieve` to fetch the current status of a feature toggle.
 
+... Note that `retrieve` returns the locally saved status of your toggle, this command does not trigger a fetch from CloudKit. Feature Toggles are fetched from CloudKit once at app start from within the `FeatureToggleApplicationService` `UIApplicationDelegate` hook. Additionally you can subscribe to updates whenever there was a change to the feature toggles in CloudKit as shown in the next section. 
+
+### Notifications
+
+You can subscribe to updates from your feature toggles in CloudKit by subscribing to the `onRecordsUpdated` Notification like so:
+
+```
+NotificationCenter.default.addObserver(self, selector: #selector(updateToggleStatusFromNotification), name: NSNotification.Name.onRecordsUpdated, object: nil)
+```
+
+```
+@objc
+private func updateToggleStatusFromNotification(notification NSNotification) {
+    guard let updatedToggles = notification.userInfo[Notification.featureToggleUserInfoKey] as? [FeatureToggle] else {
+        return
+    }
+    
+    // do something with the updated toggle like e.g. disabling UI elements 
+}
+```
+
+Note that the updated Feature Toggles are attached to the notifications userInfo dictionary. When this notification has been sent the updated values are also already stored in the repository.   
